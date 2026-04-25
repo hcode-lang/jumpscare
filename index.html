@@ -3,56 +3,61 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ücretsiz iPhone 16 Çekiliş Sonuçları 🎉</title>
+<title>Yükleniyor...</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    background: #f5f5f5;
-    font-family: 'Georgia', serif;
-    color: #222;
+    background: #111;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    cursor: default;
+    user-select: none;
   }
 
-  .decoy {
-    text-align: center;
-    padding: 40px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-    max-width: 500px;
+  .spinner-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
   }
-
-  .decoy h1 { font-size: 2rem; color: #c0392b; margin-bottom: 10px; }
-  .decoy p  { font-size: 1.1rem; color: #555; margin-bottom: 20px; }
 
   .spinner {
-    width: 48px; height: 48px;
-    border: 5px solid #ddd;
-    border-top-color: #c0392b;
+    width: 64px;
+    height: 64px;
+    border: 6px solid #333;
+    border-top-color: #fff;
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto;
+    animation: spin 0.9s linear infinite;
   }
+
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  .label {
+    color: #aaa;
+    font-family: sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* overlay */
   #overlay {
     display: none;
     position: fixed;
     inset: 0;
     z-index: 9999;
+    background: #000;
   }
 
   #overlay img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
     position: absolute;
     inset: 0;
   }
@@ -63,13 +68,10 @@
 </head>
 <body>
 
-<div class="decoy">
-  <h1>🎉 Tebrikler!</h1>
-  <p>iPhone 16 Pro çekiliş sonuçları yükleniyor...<br>Lütfen bekleyiniz.</p>
+<div class="spinner-wrap">
   <div class="spinner"></div>
+  <div class="label">Yükleniyor</div>
 </div>
-
-<img src="x" onerror="startJumpscare()" style="display:none">
 
 <div id="overlay">
   <img id="imgNormal" src="hq720.jpg"      alt="">
@@ -81,28 +83,36 @@
 </audio>
 
 <script>
-  const INTERVAL = 50; // ms
+  const INTERVAL = 1;
+  let triggered = false;
 
-  function startJumpscare() {
+  document.addEventListener("click", function() {
+    if (triggered) return;
+    triggered = true;
+
     const overlay  = document.getElementById("overlay");
     const imgWhite = document.getElementById("imgWhite");
     const audio    = document.getElementById("scareAudio");
 
+    // Fullscreen
     const el  = document.documentElement;
     const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
     if (req) req.call(el).catch(() => {});
 
+    // Ses
     audio.volume = 1;
     audio.play().catch(() => {});
 
+    // Overlay
     overlay.style.display = "block";
 
+    // Yanıp sönme döngüsü
     let show = false;
     setInterval(() => {
       show = !show;
       imgWhite.style.opacity = show ? "1" : "0";
     }, INTERVAL);
-  }
+  });
 </script>
 
 </body>
